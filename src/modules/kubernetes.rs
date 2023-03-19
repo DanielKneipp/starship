@@ -141,6 +141,10 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
 
     let kube_ctx = env::split_paths(&kube_cfg).find_map(get_kube_context)?;
 
+    if config.ignore_contexts.contains(&kube_ctx.as_str()) {
+        return None
+    }
+
     let ctx_components: Vec<KubeCtxComponents> = env::split_paths(&kube_cfg)
         .filter_map(|filename| get_kube_ctx_component(filename, &kube_ctx))
         .collect();

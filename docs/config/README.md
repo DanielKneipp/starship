@@ -2383,21 +2383,21 @@ case the module will only be active in directories that match those conditions.
 
 ### Options
 
-| Option              | Default                                            | Description                                                           |
-| ------------------- | -------------------------------------------------- | --------------------------------------------------------------------- |
-| `symbol`            | `'☸ '`                                             | A format string representing the symbol displayed before the Cluster. |
-| `format`            | `'[$symbol$context( \($namespace\))]($style) in '` | The format for the module.                                            |
-| `style`             | `'cyan bold'`                                      | The style for the module.                                             |
-| `context_aliases`   | `{}`                                               | Table of context aliases to display.                                  |
-| `user_aliases`      | `{}`                                               | Table of user aliases to display.                                     |
-| `ignore_contexts`   | `[]`                                               | List of context names to be ignored.                                  |
-| `ignore_namespaces` | `[]`                                               | List of namespace names to be ignored.                                |
-| `ignore_contexts`   | `[]`                                               | List of context names to be ignored.                                  |
-| `ignore_combo`      | `{}`                                               | Table of context/namespace names to ignore.                           |
-| `detect_extensions` | `[]`                                               | Which extensions should trigger this module.                          |
-| `detect_files`      | `[]`                                               | Which filenames should trigger this module.                           |
-| `detect_folders`    | `[]`                                               | Which folders should trigger this modules.                            |
-| `disabled`          | `true`                                             | Disables the `kubernetes` module.                                     |
+| Option              | Default                                            | Description                                                                                                           |
+| ------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `symbol`            | `'☸ '`                                             | A format string representing the symbol displayed before the Cluster.                                                 |
+| `format`            | `'[$symbol$context( \($namespace\))]($style) in '` | The format for the module.                                                                                            |
+| `style`             | `'cyan bold'`                                      | The style for the module.                                                                                             |
+| `context_aliases`   | `{}`                                               | Table of context aliases to display.                                                                                  |
+| `user_aliases`      | `{}`                                               | Table of user aliases to display.                                                                                     |
+| `ignore_contexts`   | `[]`                                               | List of context names to be ignored.                                                                                  |
+| `ignore_namespaces` | `[]`                                               | List of namespace names to be ignored.                                                                                |
+| `ignore_contexts`   | `[]`                                               | List of context names to be ignored.                                                                                  |
+| `ignore_combo`      | `{}`                                               | Table of context/namespace names to ignore. Add the `""` namespace if you want to ignore when no namespace is defined |
+| `detect_extensions` | `[]`                                               | Which extensions should trigger this module.                                                                          |
+| `detect_files`      | `[]`                                               | Which filenames should trigger this module.                                                                           |
+| `detect_folders`    | `[]`                                               | Which folders should trigger this modules.                                                                            |
+| `disabled`          | `true`                                             | Disables the `kubernetes` module.                                                                                     |
 
 ### Variables
 
@@ -2427,6 +2427,8 @@ disabled = false
 [kubernetes.user_aliases]
 'dev.local.cluster.k8s' = 'dev'
 'root/.*' = 'root'
+[kubernetes.ignore_combo]
+docker-desktop = ["default", ""]
 ```
 
 Only show the module in directories that contain a `k8s` file.

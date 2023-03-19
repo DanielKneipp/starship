@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -20,6 +21,7 @@ pub struct StarshipRootConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub palette: Option<String>,
     pub palettes: HashMap<String, Palette>,
+    pub profiles: IndexMap<String, String>,
 }
 
 pub type Palette = HashMap<String, String>;
@@ -36,6 +38,7 @@ pub const PROMPT_ORDER: &[&str] = &[
     "kubernetes",
     "directory",
     "vcsh",
+    "fossil_branch",
     "git_branch",
     "git_commit",
     "git_state",
@@ -125,6 +128,7 @@ impl Default for StarshipRootConfig {
             format: "$all".to_string(),
             right_format: String::new(),
             continuation_prompt: "[∙](bright-black) ".to_string(),
+            profiles: Default::default(),
             scan_timeout: 30,
             command_timeout: 500,
             add_newline: true,

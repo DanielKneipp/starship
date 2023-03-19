@@ -373,7 +373,7 @@ users: []
         dir.close()
     }
 
-    fn base_test_ctx_alias(ctx_name: &str, config: toml::Value, expected: &str) -> io::Result<()> {
+    fn base_test_ctx_alias(ctx_name: &str, config: toml::Table, expected: &str) -> io::Result<()> {
         let dir = tempfile::tempdir()?;
 
         let filename = dir.path().join("config");
@@ -678,7 +678,7 @@ users: []
 
     fn base_test_user_alias(
         user_name: &str,
-        config: toml::Value,
+        config: toml::Table,
         expected: &str,
     ) -> io::Result<()> {
         let dir = tempfile::tempdir()?;

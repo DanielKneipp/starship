@@ -10,6 +10,7 @@ use once_cell::sync::Lazy;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::Once;
 use tempfile::TempDir;
 
 static FIXTURE_DIR: Lazy<PathBuf> =
@@ -18,7 +19,9 @@ static FIXTURE_DIR: Lazy<PathBuf> =
 static GIT_FIXTURE: Lazy<PathBuf> = Lazy::new(|| FIXTURE_DIR.join("git-repo.bundle"));
 static HG_FIXTURE: Lazy<PathBuf> = Lazy::new(|| FIXTURE_DIR.join("hg-repo.bundle"));
 
-static LOGGER: Lazy<()> = Lazy::new(|| {
+static LOGGER: Once = Once::new();
+
+fn init_logger() {
     let mut logger = StarshipLogger::default();
 
     // Don't log to files during tests
@@ -31,7 +34,7 @@ static LOGGER: Lazy<()> = Lazy::new(|| {
     logger.set_log_file_path(nul);
 
     log::set_boxed_logger(Box::new(logger)).unwrap();
-});
+}
 
 pub fn default_context() -> Context<'static> {
     let mut context = Context::new_with_shell_and_path(
@@ -55,7 +58,7 @@ impl<'a> ModuleRenderer<'a> {
     /// Creates a new `ModuleRenderer`
     pub fn new(name: &'a str) -> Self {
         // Start logger
-        Lazy::force(&LOGGER);
+        LOGGER.call_once(init_logger);
 
         let context = default_context();
 
@@ -84,7 +87,7 @@ impl<'a> ModuleRenderer<'a> {
     }
 
     /// Sets the config of the underlying context
-    pub fn config(mut self, config: toml::Value) -> Self {
+    pub fn config(mut self, config: toml::Table) -> Self {
         self.context.root_config = StarshipRootConfig::load(&config);
         self.context.config = StarshipConfig {
             config: Some(config),
@@ -164,6 +167,7 @@ impl<'a> ModuleRenderer<'a> {
 
 #[derive(Clone, Copy)]
 pub enum FixtureProvider {
+    Fossil,
     Git,
     Hg,
     Pijul,
@@ -171,6 +175,20 @@ pub enum FixtureProvider {
 
 pub fn fixture_repo(provider: FixtureProvider) -> io::Result<TempDir> {
     match provider {
+        FixtureProvider::Fossil => {
+            let checkout_db = if cfg!(windows) {
+                "_FOSSIL_"
+            } else {
+                ".fslckout"
+            };
+            let path = tempfile::tempdir()?;
+            fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .open(path.path().join(checkout_db))?
+                .sync_all()?;
+            Ok(path)
+        }
         FixtureProvider::Git => {
             let path = tempfile::tempdir()?;
 

@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use std::collections::BTreeSet;
 use std::fmt::{Debug, Write as FmtWrite};
 use std::io::{self, Write};
+use std::path::PathBuf;
 use std::time::Duration;
 use terminal_size::terminal_size;
 use unicode_segmentation::UnicodeSegmentation;
@@ -11,6 +12,7 @@ use unicode_width::UnicodeWidthChar;
 
 use crate::configs::PROMPT_ORDER;
 use crate::context::{Context, Properties, Shell, Target};
+use crate::formatter::string_formatter::StringFormatterError;
 use crate::formatter::{StringFormatter, VariableHolder};
 use crate::module::Module;
 use crate::module::ALL_MODULES;
@@ -333,7 +335,7 @@ fn handle_module<'a>(
         for (child, config) in context
             .config
             .get_config(&[module])
-            .and_then(|config| config.as_table().map(|t| t.iter()))
+            .and_then(|config| config.as_table().map(toml::map::Map::iter))
             .into_iter()
             .flatten()
         {
@@ -403,32 +405,42 @@ fn all_modules_uniq(module_list: &BTreeSet<String>) -> Vec<String> {
 /// and the list of all modules used in a format string
 fn load_formatter_and_modules<'a>(context: &'a Context) -> (StringFormatter<'a>, BTreeSet<String>) {
     let config = &context.root_config;
+    let (formatter, config_param) = match &context.target {
+        Target::Main => (StringFormatter::new(&config.format), "format".to_string()),
+        Target::Right => (
+            StringFormatter::new(&config.right_format),
+            "right_format".to_string(),
+        ),
+        Target::Continuation => (
+            StringFormatter::new(&config.continuation_prompt),
+            "continuation_prompt".to_string(),
+        ),
+        Target::Profile(name) => (
+            match config.profiles.get(name) {
+                Some(format) => StringFormatter::new(format),
+                _ => Err(StringFormatterError::Custom("Invalid Profile".to_string())),
+            },
+            format!("profile: {}", &name),
+        ),
+    };
 
-    let lformatter = StringFormatter::new(&config.format);
     let rformatter = StringFormatter::new(&config.right_format);
-    let cformatter = StringFormatter::new(&config.continuation_prompt);
-    if lformatter.is_err() {
-        log::error!("Error parsing `format`")
+
+    if formatter.is_err() {
+        log::error!("Error parsing `{}`", config_param);
     }
     if rformatter.is_err() {
         log::error!("Error parsing `right_format`")
     }
-    if cformatter.is_err() {
-        log::error!("Error parsing `continuation_prompt`")
-    }
 
-    match (lformatter, rformatter, cformatter) {
-        (Ok(lf), Ok(rf), Ok(cf)) => {
+    match (formatter, rformatter) {
+        (Ok(lf), Ok(rf)) => {
             let mut modules: BTreeSet<String> = BTreeSet::new();
             if context.target != Target::Continuation {
                 modules.extend(lf.get_variables());
                 modules.extend(rf.get_variables());
             }
-            match context.target {
-                Target::Main => (lf, modules),
-                Target::Right => (rf, modules),
-                Target::Continuation => (cf, modules),
-            }
+            (lf, modules)
         }
         _ => (StringFormatter::raw(">"), BTreeSet::new()),
     }
@@ -453,13 +465,22 @@ impl ValueEnum for Preset {
     }
 }
 
-pub fn preset_command(name: Option<Preset>, list: bool) {
+pub fn preset_command(name: Option<Preset>, output: Option<PathBuf>, list: bool) {
     if list {
         println!("{}", preset_list());
         return;
     }
     let variant = name.expect("name argument must be specified");
-    shadow::print_preset_content(variant.0);
+    let content = shadow::get_preset_content(variant.0);
+    if let Some(output) = output {
+        if let Err(err) = std::fs::write(output, content) {
+            eprintln!("Error writing preset to file: {err}");
+            std::process::exit(1);
+        }
+    } else if let Err(err) = std::io::stdout().write_all(content) {
+        eprintln!("Error writing preset to stdout: {err}");
+        std::process::exit(1);
+    }
 }
 
 fn preset_list() -> String {
@@ -474,6 +495,27 @@ mod test {
     use super::*;
     use crate::config::StarshipConfig;
     use crate::test::default_context;
+    use crate::utils;
+
+    #[test]
+    fn main_prompt() {
+        let mut context = default_context();
+        context.config = StarshipConfig {
+            config: Some(toml::toml! {
+                add_newline=false
+                format="$character"
+                [character]
+                format=">\n>"
+            }),
+        };
+        context.root_config.format = "$character".to_string();
+        context.target = Target::Main;
+        context.root_config.add_newline = false;
+
+        let expected = String::from(">\n>");
+        let actual = get_prompt(context);
+        assert_eq!(expected, actual);
+    }
 
     #[test]
     fn right_prompt() {
@@ -489,6 +531,54 @@ mod test {
         context.target = Target::Right;
 
         let expected = String::from(">>"); // should strip new lines
+        let actual = get_prompt(context);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn custom_prompt() {
+        let mut context = default_context();
+        context.config = StarshipConfig {
+            config: Some(toml::toml! {
+                add_newline = false
+                [profiles]
+                test="0_0$character"
+                [character]
+                format=">>"
+            }),
+        };
+        context
+            .root_config
+            .profiles
+            .insert("test".to_string(), "0_0$character".to_string());
+        context.target = Target::Profile("test".to_string());
+        context.root_config.add_newline = false;
+
+        let expected = String::from("0_0>>");
+        let actual = get_prompt(context);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn custom_prompt_fallback() {
+        let mut context = default_context();
+        context.config = StarshipConfig {
+            config: Some(toml::toml! {
+                add_newline=false
+                [profiles]
+                test="0_0$character"
+                [character]
+                format=">>"
+            }),
+        };
+        context
+            .root_config
+            .profiles
+            .insert("test".to_string(), "0_0$character".to_string());
+        context.target = Target::Profile("wrong_prompt".to_string());
+        context.root_config.add_newline = false;
+
+        let expected = String::from(">");
         let actual = get_prompt(context);
         assert_eq!(expected, actual);
     }
@@ -516,10 +606,23 @@ mod test {
 
     #[test]
     fn preset_command_does_not_panic_on_correct_inputs() {
-        preset_command(None, true);
+        preset_command(None, None, true);
         Preset::value_variants()
             .iter()
-            .for_each(|v| preset_command(Some(v.clone()), false));
+            .for_each(|v| preset_command(Some(v.clone()), None, false));
+    }
+
+    #[test]
+    fn preset_command_output_to_file() -> std::io::Result<()> {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("preset.toml");
+        preset_command(Some(Preset("nerd-font-symbols")), Some(path.clone()), false);
+
+        let actual = utils::read_file(&path)?;
+        let expected = include_str!("../docs/.vuepress/public/presets/toml/nerd-font-symbols.toml");
+        assert_eq!(actual, expected);
+
+        dir.close()
     }
 
     #[test]

@@ -876,6 +876,9 @@
         "detect_folders": [],
         "disabled": true,
         "format": "[$symbol$context( \\($namespace\\))]($style) in ",
+        "ignore_combo": {},
+        "ignore_contexts": [],
+        "ignore_namespaces": [],
         "style": "cyan bold",
         "symbol": "☸ ",
         "user_aliases": {}
@@ -3858,6 +3861,30 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "ignore_contexts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_namespaces": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_combo": {
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

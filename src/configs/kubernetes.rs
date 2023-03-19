@@ -18,6 +18,9 @@ pub struct KubernetesConfig<'a> {
     pub detect_extensions: Vec<&'a str>,
     pub detect_files: Vec<&'a str>,
     pub detect_folders: Vec<&'a str>,
+    pub ignore_contexts: Vec<&'a str>,
+    pub ignore_namespaces: Vec<&'a str>,
+    pub ignore_combo: HashMap<String, Vec<&'a str>>,
 }
 
 impl<'a> Default for KubernetesConfig<'a> {
@@ -32,6 +35,9 @@ impl<'a> Default for KubernetesConfig<'a> {
             detect_extensions: vec![],
             detect_files: vec![],
             detect_folders: vec![],
+            ignore_contexts: vec![],
+            ignore_namespaces: vec![],
+            ignore_combo: HashMap::new(),
         }
     }
 }

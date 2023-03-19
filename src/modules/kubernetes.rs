@@ -141,9 +141,30 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
 
     let kube_ctx = env::split_paths(&kube_cfg).find_map(get_kube_context)?;
 
+    if config.ignore_contexts.contains(&kube_ctx.as_str()) {
+        return None
+    }
+
     let ctx_components: Vec<KubeCtxComponents> = env::split_paths(&kube_cfg)
         .filter_map(|filename| get_kube_ctx_component(filename, &kube_ctx))
         .collect();
+
+    for ctx_component in ctx_components.iter() {
+        let kube_namespace = match ctx_component.namespace.clone() { // TODO: not clone it
+            Some(val) => val,
+            _ => String::from(""),
+        };
+
+        let kube_namespace_str = kube_namespace.as_str();
+        if config.ignore_namespaces.contains(&kube_namespace_str) {
+            return None;
+        }
+
+        match config.ignore_combo.get(&kube_ctx) {
+            Some(list) => if list.contains(&kube_namespace_str) { return None; },
+            None => (),
+        }
+    }
 
     let parsed = StringFormatter::new(config.format).and_then(|formatter| {
         formatter
@@ -930,6 +951,167 @@ users: []
 
         let expected = Some("☸ test_user test_namespace".to_string());
         assert_eq!(expected, actual);
+        dir.close()
+    }
+
+    #[test]
+    fn test_ctx_ignore_simple() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let filename = dir.path().join("config");
+
+        let mut file = File::create(&filename)?;
+        file.write_all(
+            b"
+apiVersion: v1
+clusters: []
+contexts:
+  - context:
+      cluster: test_cluster
+      user: test_user
+    name: test_context
+current-context: test_context
+kind: Config
+preferences: {}
+users: []
+",
+        )?;
+        file.sync_all()?;
+
+        let actual = ModuleRenderer::new("kubernetes")
+            .path(dir.path())
+            .env("KUBECONFIG", filename.to_string_lossy().as_ref())
+            .config(toml::toml! {
+                [kubernetes]
+                disabled = false
+                ignore_contexts = ["test_context"]
+            })
+            .collect();
+
+        assert_eq!(None, actual);
+
+        dir.close()
+    }
+
+    #[test]
+    fn test_combo_ignore_with_namespace() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let filename = dir.path().join("config");
+
+        let mut file = File::create(&filename)?;
+        file.write_all(
+            b"
+apiVersion: v1
+clusters: []
+contexts:
+  - context:
+      cluster: test_cluster
+      user: test_user
+      namespace: test_namespace
+    name: test_context
+current-context: test_context
+kind: Config
+preferences: {}
+users: []
+",
+        )?;
+        file.sync_all()?;
+
+        let actual = ModuleRenderer::new("kubernetes")
+            .path(dir.path())
+            .env("KUBECONFIG", filename.to_string_lossy().as_ref())
+            .config(toml::toml! {
+                [kubernetes]
+                disabled = false
+                ignore_combo = { test_context = ["test_namespace"] }
+            })
+            .collect();
+
+        assert_eq!(None, actual);
+
+        dir.close()
+    }
+
+    #[test]
+    fn test_combo_ignore_without_namespace() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let filename = dir.path().join("config");
+
+        let mut file = File::create(&filename)?;
+        file.write_all(
+            b"
+apiVersion: v1
+clusters: []
+contexts:
+  - context:
+      cluster: test_cluster
+      user: test_user
+    name: test_context
+current-context: test_context
+kind: Config
+preferences: {}
+users: []
+",
+        )?;
+        file.sync_all()?;
+
+        let actual = ModuleRenderer::new("kubernetes")
+            .path(dir.path())
+            .env("KUBECONFIG", filename.to_string_lossy().as_ref())
+            .config(toml::toml! {
+                [kubernetes]
+                disabled = false
+                ignore_combo = { test_context = ["test_namespace"] }
+            })
+            .collect();
+
+        let expected = Some(format!(
+            "{} in ",
+            Color::Cyan.bold().paint("☸ test_context")
+        ));
+        assert_eq!(expected, actual);
+
+        dir.close()
+    }
+
+    #[test]
+    fn test_combo_ignore_no_namespace() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let filename = dir.path().join("config");
+
+        let mut file = File::create(&filename)?;
+        file.write_all(
+            b"
+apiVersion: v1
+clusters: []
+contexts:
+  - context:
+      cluster: test_cluster
+      user: test_user
+    name: test_context
+current-context: test_context
+kind: Config
+preferences: {}
+users: []
+",
+        )?;
+        file.sync_all()?;
+
+        let actual = ModuleRenderer::new("kubernetes")
+            .path(dir.path())
+            .env("KUBECONFIG", filename.to_string_lossy().as_ref())
+            .config(toml::toml! {
+                [kubernetes]
+                disabled = false
+                ignore_combo = { test_context = [""] }
+            })
+            .collect();
+
+        assert_eq!(None, actual);
+
         dir.close()
     }
 }

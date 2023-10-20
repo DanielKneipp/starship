@@ -16,6 +16,7 @@ pub struct DockerContextConfig<'a> {
     pub detect_extensions: Vec<&'a str>,
     pub detect_files: Vec<&'a str>,
     pub detect_folders: Vec<&'a str>,
+    pub ignore_contexts: Vec<&'a str>,
 }
 
 impl<'a> Default for DockerContextConfig<'a> {
@@ -29,6 +30,7 @@ impl<'a> Default for DockerContextConfig<'a> {
             detect_extensions: vec![],
             detect_files: vec!["docker-compose.yml", "docker-compose.yaml", "Dockerfile"],
             detect_folders: vec![],
+            ignore_contexts: vec!["default"],
         }
     }
 }

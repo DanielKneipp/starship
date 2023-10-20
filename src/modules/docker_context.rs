@@ -57,7 +57,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         }
     };
 
-    if ctx == "default" {
+    if config.ignore_contexts.contains(&ctx.as_str()) {
         return None;
     }
 
@@ -418,6 +418,60 @@ mod tests {
             "via {} ",
             Color::Blue.bold().paint("🐳 machine_name")
         ));
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
+    fn test_docker_context_ignore() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let cfg_file = cfg_dir.path().join("config.json");
+
+        let config_content = serde_json::json!({
+            "currentContext": "default"
+        });
+
+        let mut docker_config = File::create(cfg_file)?;
+        docker_config.write_all(config_content.to_string().as_bytes())?;
+        docker_config.sync_all()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .config(toml::toml! {
+                [docker_context]
+                ignore_contexts = ["default"]
+            })
+            .collect();
+        let expected = Some(String::from(""));
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
+    fn test_docker_context_dont_ignore() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let cfg_file = cfg_dir.path().join("config.json");
+
+        let config_content = serde_json::json!({
+            "currentContext": "default"
+        });
+
+        let mut docker_config = File::create(cfg_file)?;
+        docker_config.write_all(config_content.to_string().as_bytes())?;
+        docker_config.sync_all()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .config(toml::toml! {
+                [docker_context]
+                ignore_contexts = []
+            })
+            .collect();
+        let expected = Some(String::from("🐳 default"));
 
         assert_eq!(expected, actual);
 

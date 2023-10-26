@@ -21,6 +21,7 @@ pub struct KubernetesConfig<'a> {
     pub ignore_contexts: Vec<&'a str>,
     pub ignore_namespaces: Vec<&'a str>,
     pub ignore_combo: HashMap<String, Vec<&'a str>>,
+    pub contexts: Vec<KubernetesContextConfig<'a>>,
 }
 
 impl<'a> Default for KubernetesConfig<'a> {
@@ -38,6 +39,23 @@ impl<'a> Default for KubernetesConfig<'a> {
             ignore_contexts: vec![],
             ignore_namespaces: vec![],
             ignore_combo: HashMap::new(),
+            contexts: vec![],
         }
     }
+}
+
+#[derive(Clone, Deserialize, Serialize, Default)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
+pub struct KubernetesContextConfig<'a> {
+    pub context_pattern: &'a str,
+    pub user_pattern: Option<&'a str>,
+    pub symbol: Option<&'a str>,
+    pub style: Option<&'a str>,
+    pub context_alias: Option<&'a str>,
+    pub user_alias: Option<&'a str>,
 }

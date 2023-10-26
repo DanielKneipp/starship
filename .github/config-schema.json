@@ -365,6 +365,9 @@
         "detect_folders": [],
         "disabled": false,
         "format": "via [$symbol$context]($style) ",
+        "ignore_contexts": [
+          "default"
+        ],
         "only_with_files": true,
         "style": "blue bold",
         "symbol": "🐳 "
@@ -2728,6 +2731,15 @@
         },
         "detect_folders": {
           "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore_contexts": {
+          "default": [
+            "default"
+          ],
           "type": "array",
           "items": {
             "type": "string"

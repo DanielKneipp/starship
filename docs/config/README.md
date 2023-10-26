@@ -1215,6 +1215,7 @@ the context in use).
 | `detect_files`      | `['docker-compose.yml', 'docker-compose.yaml', 'Dockerfile']` | Which filenames should trigger this module (needs `only_with_files` to be true).  |
 | `detect_folders`    | `[]`                                                          | Which folders should trigger this module (needs `only_with_files` to be true).    |
 | `style`             | `'blue bold'`                                                 | The style for the module.                                                         |
+| `ignore_contexts`    `["default"]`                                                  | List of contexts to be ignored.                                                   |
 | `disabled`          | `false`                                                       | Disables the `docker_context` module.                                             |
 
 ### Variables

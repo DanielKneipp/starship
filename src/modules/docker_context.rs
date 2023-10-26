@@ -442,9 +442,10 @@ mod tests {
             .config(toml::toml! {
                 [docker_context]
                 ignore_contexts = ["default"]
+                only_with_files = false
             })
             .collect();
-        let expected = Some(String::from(""));
+        let expected = None;
 
         assert_eq!(expected, actual);
 
@@ -469,9 +470,14 @@ mod tests {
             .config(toml::toml! {
                 [docker_context]
                 ignore_contexts = []
+                only_with_files = false
             })
             .collect();
-        let expected = Some(String::from("🐳 default"));
+
+        let expected = Some(format!(
+            "via {} ",
+            Color::Blue.bold().paint("🐳 default")
+        ));
 
         assert_eq!(expected, actual);
 

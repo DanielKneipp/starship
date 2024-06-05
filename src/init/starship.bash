@@ -36,7 +36,7 @@ starship_precmd() {
     if [[ ${BLE_ATTACHED-} && ${#BLE_PIPESTATUS[@]} -gt 0 ]]; then
         STARSHIP_PIPE_STATUS=("${BLE_PIPESTATUS[@]}")
     fi
-    if [[ -n "${BP_PIPESTATUS-}" ]] && [[ "${#BP_PIPESTATUS[@]}" -gt "${#STARSHIP_PIPE_STATUS[@]}" ]]; then
+    if [[ -n "${BP_PIPESTATUS-}" ]] && [[ "${#BP_PIPESTATUS[@]}" -gt 0 ]]; then
         STARSHIP_PIPE_STATUS=(${BP_PIPESTATUS[@]})
     fi
 
@@ -65,8 +65,8 @@ starship_precmd() {
     # command pipeline, which may rely on it.
     _starship_set_return "$STARSHIP_CMD_STATUS"
 
-    if [[ -n "${_PRESERVED_PROMPT_COMMAND-}" ]]; then
-        eval "$_PRESERVED_PROMPT_COMMAND"
+    if [[ -n "${STARSHIP_PROMPT_COMMAND-}" ]]; then
+        eval "$STARSHIP_PROMPT_COMMAND"
     fi
 
     local -a ARGS=(--terminal-width="${COLUMNS}" --status="${STARSHIP_CMD_STATUS}" --pipestatus="${STARSHIP_PIPE_STATUS[*]}" --jobs="${NUM_JOBS}")
@@ -75,7 +75,7 @@ starship_precmd() {
         STARSHIP_END_TIME=$(::STARSHIP:: time)
         STARSHIP_DURATION=$((STARSHIP_END_TIME - STARSHIP_START_TIME))
         ARGS+=( --cmd-duration="${STARSHIP_DURATION}")
-        unset STARSHIP_START_TIME
+        STARSHIP_START_TIME=""
     fi
     PS1="$(::STARSHIP:: prompt "${ARGS[@]}")"
     if [[ ${BLE_ATTACHED-} ]]; then
@@ -92,23 +92,34 @@ if [[ ${BLE_VERSION-} && _ble_version -ge 400 ]]; then
     blehook PRECMD!='starship_precmd'
 # If the user appears to be using https://github.com/rcaloras/bash-preexec,
 # then hook our functions into their framework.
-elif [[ "${__bp_imported:-}" == "defined" || -n "${preexec_functions-}" || -n "${precmd_functions-}" ]]; then
+elif [[ -n "${bash_preexec_imported:-}" || -n "${__bp_imported:-}" || -n "${preexec_functions-}" || -n "${precmd_functions-}" ]]; then
     # bash-preexec needs a single function--wrap the args into a closure and pass
     starship_preexec_all(){ starship_preexec "$_"; }
     preexec_functions+=(starship_preexec_all)
     precmd_functions+=(starship_precmd)
 else
-    # We want to avoid destroying an existing DEBUG hook. If we detect one, create
-    # a new function that runs both the existing function AND our function, then
-    # re-trap DEBUG to use this new function. This prevents a trap clobber.
-    dbg_trap="$(trap -p DEBUG | cut -d' ' -f3 | tr -d \')"
-    if [[ -z "$dbg_trap" ]]; then
-        trap 'starship_preexec "$_"' DEBUG
-    elif [[ "$dbg_trap" != 'starship_preexec "$_"' && "$dbg_trap" != 'starship_preexec_all "$_"' ]]; then
-        starship_preexec_all() {
-            local PREV_LAST_ARG=$1 ; $dbg_trap; starship_preexec; : "$PREV_LAST_ARG";
+    if [[ -n "${BASH_VERSION-}" ]] && [[ "${BASH_VERSINFO[0]}" -gt 4 || ( "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -ge 4 ) ]]; then
+        starship_preexec_ps0() {
+            ::STARSHIP:: time
         }
-        trap 'starship_preexec_all "$_"' DEBUG
+        # In order to set STARSHIP_START_TIME use an arithmetic expansion that evaluates to 0
+        # To avoid printing anything, use the return value in an ${var:offset:length} substring expansion
+        # with offset and length evaluating to 0.
+        PS0='${STARSHIP_START_TIME:$((STARSHIP_START_TIME="$(starship_preexec_ps0)",STARSHIP_PREEXEC_READY=0,0)):0}'"${PS0-}"
+    else
+        # We want to avoid destroying an existing DEBUG hook. If we detect one, create
+        # a new function that runs both the existing function AND our function, then
+        # re-trap DEBUG to use this new function. This prevents a trap clobber.
+        eval "STARSHIP_DEBUG_TRAP=($(trap -p DEBUG))"
+        STARSHIP_DEBUG_TRAP=("${STARSHIP_DEBUG_TRAP[2]}")
+        if [[ -z "$STARSHIP_DEBUG_TRAP" ]]; then
+            trap 'starship_preexec "$_"' DEBUG
+        elif [[ "$STARSHIP_DEBUG_TRAP" != 'starship_preexec "$_"' && "$STARSHIP_DEBUG_TRAP" != 'starship_preexec_all "$_"' ]]; then
+            starship_preexec_all() {
+                local PREV_LAST_ARG=$1 ; eval -- "$STARSHIP_DEBUG_TRAP"; starship_preexec; : "$PREV_LAST_ARG";
+            }
+            trap 'starship_preexec_all "$_"' DEBUG
+        fi
     fi
 
     # Finally, prepare the precmd function and set up the start time. We will avoid to
@@ -120,7 +131,7 @@ else
         # Prepending to PROMPT_COMMAND breaks "command duration" module.
         # So, we are preserving the existing PROMPT_COMMAND
         # which will be executed later in the starship_precmd function
-        _PRESERVED_PROMPT_COMMAND="$PROMPT_COMMAND"
+        STARSHIP_PROMPT_COMMAND="$PROMPT_COMMAND"
         PROMPT_COMMAND="starship_precmd"
     fi
 fi

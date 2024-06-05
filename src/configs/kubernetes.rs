@@ -21,6 +21,7 @@ pub struct KubernetesConfig<'a> {
     pub ignore_contexts: Vec<&'a str>,
     pub ignore_namespaces: Vec<&'a str>,
     pub ignore_combo: HashMap<String, Vec<&'a str>>,
+    pub detect_env_vars: Vec<&'a str>,
     pub contexts: Vec<KubernetesContextConfig<'a>>,
 }
 
@@ -39,6 +40,7 @@ impl<'a> Default for KubernetesConfig<'a> {
             ignore_contexts: vec![],
             ignore_namespaces: vec![],
             ignore_combo: HashMap::new(),
+            detect_env_vars: vec![],
             contexts: vec![],
         }
     }

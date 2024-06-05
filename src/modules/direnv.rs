@@ -85,7 +85,7 @@ impl FromStr for DirenvState {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match serde_json::from_str::<RawDirenvState>(s) {
-            Ok(raw) => Ok(DirenvState {
+            Ok(raw) => Ok(Self {
                 rc_path: raw.state.found_rc.path,
                 allowed: raw.state.found_rc.allowed.try_into()?,
                 loaded: matches!(
@@ -93,7 +93,7 @@ impl FromStr for DirenvState {
                     AllowStatus::Allowed
                 ),
             }),
-            Err(_) => DirenvState::from_lines(s),
+            Err(_) => Self::from_lines(s),
         }
     }
 }
@@ -184,6 +184,7 @@ mod tests {
 
     use crate::test::ModuleRenderer;
     use crate::utils::CommandOutput;
+    use nu_ansi_term::Color;
     use std::io;
     use std::path::Path;
     #[test]
@@ -225,9 +226,9 @@ mod tests {
         let dir = tempfile::tempdir()?;
         let rc_path = dir.path().join(".envrc");
 
-        std::fs::File::create(&rc_path)?.sync_all()?;
+        std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -239,13 +240,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc(dir.path(), false, "0", true),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv not loaded/allowed")
+        ));
 
-        assert_eq!(
-            Some(format!("direnv not loaded/allowed ")),
-            renderer.collect()
-        );
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -255,7 +257,7 @@ mod tests {
 
         std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -267,13 +269,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc_json(dir.path(), 1, 0),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv not loaded/allowed")
+        ));
 
-        assert_eq!(
-            Some("direnv not loaded/allowed ".to_string()),
-            renderer.collect()
-        );
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -281,9 +284,9 @@ mod tests {
         let dir = tempfile::tempdir()?;
         let rc_path = dir.path().join(".envrc");
 
-        std::fs::File::create(&rc_path)?.sync_all()?;
+        std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -295,10 +298,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc(dir.path(), true, "0", true),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv loaded/allowed")
+        ));
 
-        assert_eq!(Some(format!("direnv loaded/allowed ")), renderer.collect());
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -308,7 +315,7 @@ mod tests {
 
         std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -320,13 +327,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc_json(dir.path(), 0, 0),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv loaded/allowed")
+        ));
 
-        assert_eq!(
-            Some("direnv loaded/allowed ".to_string()),
-            renderer.collect()
-        );
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -334,9 +342,9 @@ mod tests {
         let dir = tempfile::tempdir()?;
         let rc_path = dir.path().join(".envrc");
 
-        std::fs::File::create(&rc_path)?.sync_all()?;
+        std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -348,10 +356,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc(dir.path(), true, "2", true),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv loaded/denied")
+        ));
 
-        assert_eq!(Some(format!("direnv loaded/denied ")), renderer.collect());
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -359,9 +371,9 @@ mod tests {
         let dir = tempfile::tempdir()?;
         let rc_path = dir.path().join(".envrc");
 
-        std::fs::File::create(&rc_path)?.sync_all()?;
+        std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -373,13 +385,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc_json(dir.path(), 0, 1),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv loaded/not allowed")
+        ));
 
-        assert_eq!(
-            Some(format!("direnv loaded/not allowed ")),
-            renderer.collect()
-        );
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     #[test]
@@ -389,7 +402,7 @@ mod tests {
 
         std::fs::File::create(rc_path)?.sync_all()?;
 
-        let renderer = ModuleRenderer::new("direnv")
+        let actual = ModuleRenderer::new("direnv")
             .config(toml::toml! {
                 [direnv]
                 disabled = false
@@ -401,13 +414,14 @@ mod tests {
                     stdout: status_cmd_output_with_rc_json(dir.path(), 0, 2),
                     stderr: String::default(),
                 }),
-            );
+            )
+            .collect();
+        let expected = Some(format!(
+            "{} ",
+            Color::LightYellow.bold().paint("direnv loaded/denied")
+        ));
 
-        assert_eq!(
-            Some("direnv loaded/denied ".to_string()),
-            renderer.collect()
-        );
-
+        assert_eq!(expected, actual);
         dir.close()
     }
     fn status_cmd_output_without_rc() -> String {

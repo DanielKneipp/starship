@@ -183,7 +183,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         Document::Yaml(yaml) => get_current_kube_context_name(yaml),
     })?;
 
-    if config.ignore_contexts.contains(&current_kube_ctx_name.as_str()) {
+    if config.ignore_contexts.contains(&current_kube_ctx_name) {
         return None
     }
 
@@ -245,9 +245,9 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         .and_then(|ctx_cfg| ctx_cfg.symbol)
         .unwrap_or(config.symbol);
 
-    let kube_namespace = match ctx_components.namespace.clone() { // TODO: not clone it
-        Some(val) => val,
-        _ => String::from(""),
+    let kube_namespace = match ctx_components.namespace {
+        Some(ref val) => val,
+        None => &String::default(),
     };
 
     let kube_namespace_str = kube_namespace.as_str();
@@ -255,7 +255,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         return None;
     }
 
-    match config.ignore_combo.get(&current_kube_ctx_name) {
+    match config.ignore_combo.get(current_kube_ctx_name) {
         Some(list) => if list.contains(&kube_namespace_str) { return None; },
         None => (),
     }

@@ -146,10 +146,6 @@ mod tests {
         let dir = tempfile::tempdir()?;
         File::create(dir.path().join("main.mojo"))?.sync_all()?;
         let actual = ModuleRenderer::new("mojo")
-            .config(toml::toml! {
-                [mojo]
-                show_commit = true
-            })
             .cmd(
                 "mojo --version",
                 Some(CommandOutput {

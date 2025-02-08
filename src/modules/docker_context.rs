@@ -14,7 +14,7 @@ use crate::utils;
 ///     - Or there is a file named `$HOME/.docker/config.json`
 ///     - Or a file named `$DOCKER_CONFIG/config.json`
 ///     - The file is JSON and contains a field named `currentContext`
-///     - The value of `currentContext` is not `default`
+///     - The value of `currentContext` is not `default` or `desktop-linux`
 ///     - If multiple criteria are met, we use the following order to define the docker context:
 ///     - `DOCKER_HOST`, `DOCKER_CONTEXT`, $HOME/.docker/config.json, $`DOCKER_CONFIG/config.json`
 ///     - (This is the same order docker follows, as `DOCKER_HOST` and `DOCKER_CONTEXT` override the
@@ -348,6 +348,25 @@ mod tests {
     }
 
     #[test]
+    fn test_docker_context_default_after_3_5() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .env("DOCKER_CONTEXT", "desktop-linux")
+            .config(toml::toml! {
+                [docker_context]
+                only_with_files = false
+                ignore_contexts = ["desktop-linux"]
+            })
+            .collect();
+        let expected = None;
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
     fn test_docker_context_overrides_config() -> io::Result<()> {
         let cfg_dir = tempfile::tempdir()?;
 
@@ -457,6 +476,7 @@ mod tests {
         docker_config.sync_all()?;
 
         let actual = ModuleRenderer::new("docker_context")
+            .env("DOCKER_CONFIG", cfg_dir.path().to_string_lossy())
             .config(toml::toml! {
                 [docker_context]
                 ignore_contexts = ["default"]
@@ -485,6 +505,7 @@ mod tests {
         docker_config.sync_all()?;
 
         let actual = ModuleRenderer::new("docker_context")
+        .env("DOCKER_CONFIG", cfg_dir.path().to_string_lossy())
             .config(toml::toml! {
                 [docker_context]
                 ignore_contexts = []

@@ -115,7 +115,7 @@ impl DataValue for JsonValue {
 impl DataValue for Yaml {
     fn get(&self, key: &str) -> Option<&Self> {
         match self {
-            Yaml::Hash(map) => map.get(&Yaml::String(key.to_string())),
+            Self::Hash(map) => map.get(&Self::String(key.to_string())),
             _ => None,
         }
     }
@@ -126,7 +126,7 @@ impl DataValue for Yaml {
 
     fn as_array(&self) -> Option<Vec<&Self>> {
         match self {
-            Yaml::Array(arr) => Some(arr.iter().collect()),
+            Self::Array(arr) => Some(arr.iter().collect()),
             _ => None,
         }
     }
@@ -156,7 +156,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     .any(|v| !v.is_empty());
 
     let is_kube_project = have_scan_config.then(|| {
-        context.try_begin_scan().map_or(false, |scanner| {
+        context.try_begin_scan().is_some_and(|scanner| {
             scanner
                 .set_files(&config.detect_files)
                 .set_folders(&config.detect_folders)
@@ -1747,7 +1747,7 @@ users: []
         let actual = results.first().unwrap();
         match actual {
             Document::Json(..) => {}
-            _ => panic!("Expected Document::Json, got {:?}", actual),
+            _ => panic!("Expected Document::Json, got {actual:?}"),
         }
         Ok(())
     }
@@ -1778,7 +1778,7 @@ users: []
         let actual = results.first().unwrap();
         match actual {
             Document::Yaml(..) => {}
-            _ => panic!("Expected Document::Yaml, got {:?}", actual),
+            _ => panic!("Expected Document::Yaml, got {actual:?}"),
         }
         Ok(())
     }

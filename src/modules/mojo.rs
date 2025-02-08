@@ -3,6 +3,8 @@ use super::{Context, Module, ModuleConfig};
 use crate::configs::mojo::MojoConfig;
 use crate::formatter::StringFormatter;
 
+use std::sync::LazyLock;
+
 /// Creates a module with the current Mojo version
 pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     let mut module = context.new_module("mojo");
@@ -19,6 +21,8 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         return None;
     }
 
+    let version_hash = LazyLock::new(|| get_mojo_version(context));
+
     let parsed = StringFormatter::new(config.format).and_then(|formatter| {
         formatter
             .map_meta(|variable, _| match variable {
@@ -30,23 +34,14 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
                 _ => None,
             })
             .map(|variable| match variable {
-                "version" => {
-                    let mojo_version_output = context.exec_cmd("mojo", &["--version"])?.stdout;
-                    let version_items = mojo_version_output.split(' ').collect::<Vec<&str>>();
-
-                    if version_items.len() <= 1 {
-                        return None;
-                    }
-
-                    if version_items.len() == 2 || !config.show_commit {
-                        return Some(Ok(version_items[1].trim().to_string()));
-                    }
-
-                    let mojo_version = version_items[1].trim();
-                    let mojo_hash = version_items[2].trim();
-
-                    Some(Ok(format!("{} {}", mojo_version, mojo_hash)))
-                }
+                "version" => match &*version_hash {
+                    Some((version, _)) => Some(Ok(version)),
+                    _ => None,
+                },
+                "hash" => match &*version_hash {
+                    Some((_, Some(hash))) => Some(Ok(hash)),
+                    _ => None,
+                },
                 _ => None,
             })
             .parse(None, Some(context))
@@ -61,6 +56,25 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     });
 
     Some(module)
+}
+
+fn get_mojo_version(context: &Context) -> Option<(String, Option<String>)> {
+    let mojo_version_output = context.exec_cmd("mojo", &["--version"])?.stdout;
+
+    let version_items = mojo_version_output
+        .split_ascii_whitespace()
+        .collect::<Vec<&str>>();
+
+    let (version, hash) = match version_items[..] {
+        [_, version] => (version.trim().to_string(), None),
+        [_, version, hash, ..] => (version.trim().to_string(), Some(hash.trim().to_string())),
+        _ => {
+            log::debug!("Unexpected `mojo --version` output: {mojo_version_output}");
+            return None;
+        }
+    };
+
+    Some((version, hash))
 }
 
 #[cfg(test)]
@@ -114,7 +128,7 @@ mod tests {
         let actual = ModuleRenderer::new("mojo")
             .config(toml::toml! {
                 [mojo]
-                show_commit = true
+                format = "with [$symbol($version )($hash )]($style)"
             })
             .path(dir.path())
             .collect()

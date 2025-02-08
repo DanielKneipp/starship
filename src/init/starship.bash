@@ -32,12 +32,12 @@ starship_preexec() {
 # Will be run before the prompt is drawn
 starship_precmd() {
     # Save the status, because commands in this pipeline will change $?
-    STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=(${PIPESTATUS[@]})
+    STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=("${PIPESTATUS[@]}")
     if [[ ${BLE_ATTACHED-} && ${#BLE_PIPESTATUS[@]} -gt 0 ]]; then
         STARSHIP_PIPE_STATUS=("${BLE_PIPESTATUS[@]}")
     fi
     if [[ -n "${BP_PIPESTATUS-}" ]] && [[ "${#BP_PIPESTATUS[@]}" -gt 0 ]]; then
-        STARSHIP_PIPE_STATUS=(${BP_PIPESTATUS[@]})
+        STARSHIP_PIPE_STATUS=("${BP_PIPESTATUS[@]}")
     fi
 
     # Due to a bug in certain Bash versions, any external process launched
@@ -52,7 +52,7 @@ starship_precmd() {
     # Original bug: https://lists.gnu.org/archive/html/bug-bash/2022-07/msg00117.html
     jobs &>/dev/null
 
-    local NUM_JOBS=0
+    local job NUM_JOBS=0 IFS=$' \t\n'
     # Evaluate the number of jobs before running the preserved prompt command, so that tools
     # like z/autojump, which background certain jobs, do not cause spurious background jobs
     # to be displayed by starship. Also avoids forking to run `wc`, slightly improving perf.
@@ -69,7 +69,7 @@ starship_precmd() {
         eval "$STARSHIP_PROMPT_COMMAND"
     fi
 
-    local -a ARGS=(--terminal-width="${COLUMNS}" --status="${STARSHIP_CMD_STATUS}" --pipestatus="${STARSHIP_PIPE_STATUS[*]}" --jobs="${NUM_JOBS}")
+    local -a ARGS=(--terminal-width="${COLUMNS}" --status="${STARSHIP_CMD_STATUS}" --pipestatus="${STARSHIP_PIPE_STATUS[*]}" --jobs="${NUM_JOBS}" --shlvl="${SHLVL}")
     # Prepare the timer data, if needed.
     if [[ -n "${STARSHIP_START_TIME-}" ]]; then
         STARSHIP_END_TIME=$(::STARSHIP:: time)

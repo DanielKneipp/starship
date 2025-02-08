@@ -87,6 +87,7 @@
       "default": {
         "detect_extensions": [],
         "detect_files": [
+          "bun.lock",
           "bun.lockb",
           "bunfig.toml"
         ],
@@ -311,6 +312,7 @@
         "detect_files": [
           "deno.json",
           "deno.jsonc",
+          "deno.lock",
           "mod.ts",
           "deps.ts",
           "mod.js",
@@ -358,6 +360,9 @@
       "default": {
         "allowed_msg": "allowed",
         "denied_msg": "denied",
+        "detect_env_vars": [
+          "DIRENV_FILE"
+        ],
         "detect_extensions": [],
         "detect_files": [
           ".envrc"
@@ -845,6 +850,7 @@
     },
     "hostname": {
       "default": {
+        "aliases": {},
         "detect_env_vars": [],
         "disabled": false,
         "format": "[$ssh_symbol$hostname]($style) in ",
@@ -1060,7 +1066,6 @@
         "detect_folders": [],
         "disabled": false,
         "format": "with [$symbol($version )]($style)",
-        "show_commit": false,
         "style": "bold 208",
         "symbol": "🔥 "
       },
@@ -1253,6 +1258,7 @@
           "Android": "🤖 ",
           "Arch": "🎗️ ",
           "Artix": "🎗️ ",
+          "CachyOS": "🎗️ ",
           "CentOS": "💠 ",
           "Debian": "🌀 ",
           "DragonFly": "🐉 ",
@@ -1274,6 +1280,7 @@
           "Mint": "🌿 ",
           "NetBSD": "🚩 ",
           "NixOS": "❄️ ",
+          "Nobara": "🎩 ",
           "OpenBSD": "🐡 ",
           "OpenCloudOS": "☁️ ",
           "OracleLinux": "🦴 ",
@@ -1288,6 +1295,7 @@
           "Ubuntu": "🎯 ",
           "Ultramarine": "🔷 ",
           "Unknown": "❓ ",
+          "Uos": "🐲 ",
           "Void": "  ",
           "Windows": "🪟 ",
           "openEuler": "🦉 ",
@@ -1421,8 +1429,12 @@
     },
     "python": {
       "default": {
+        "detect_env_vars": [
+          "VIRTUAL_ENV"
+        ],
         "detect_extensions": [
-          "py"
+          "py",
+          "ipynb"
         ],
         "detect_files": [
           "requirements.txt",
@@ -1431,7 +1443,8 @@
           "Pipfile",
           "tox.ini",
           "setup.py",
-          "__init__.py"
+          "__init__.py",
+          "pixi.toml"
         ],
         "detect_folders": [],
         "disabled": false,
@@ -1715,7 +1728,7 @@
         "not_executable_symbol": "🚫",
         "not_found_symbol": "🔍",
         "pipestatus": false,
-        "pipestatus_format": "\\[$pipestatus\\] => [$symbol$common_meaning$signal_name$maybe_int]($style)",
+        "pipestatus_format": "\\[$pipestatus\\] => [$symbol$common_meaning$signal_name$maybe_int]($style) ",
         "pipestatus_separator": "|",
         "recognize_signal_code": true,
         "sigint_symbol": "🧱",
@@ -2222,6 +2235,7 @@
         },
         "detect_files": {
           "default": [
+            "bun.lock",
             "bun.lockb",
             "bunfig.toml"
           ],
@@ -2740,6 +2754,7 @@
           "default": [
             "deno.json",
             "deno.jsonc",
+            "deno.lock",
             "mod.ts",
             "deps.ts",
             "mod.js",
@@ -2862,6 +2877,15 @@
         },
         "detect_extensions": {
           "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "detect_env_vars": {
+          "default": [
+            "DIRENV_FILE"
+          ],
           "type": "array",
           "items": {
             "type": "string"
@@ -4043,6 +4067,13 @@
         "disabled": {
           "default": false,
           "type": "boolean"
+        },
+        "aliases": {
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "additionalProperties": false
@@ -4548,10 +4579,6 @@
           "default": "with [$symbol($version )]($style)",
           "type": "string"
         },
-        "show_commit": {
-          "default": false,
-          "type": "boolean"
-        },
         "symbol": {
           "default": "🔥 ",
           "type": "string"
@@ -4979,6 +5006,7 @@
             "Android": "🤖 ",
             "Arch": "🎗️ ",
             "Artix": "🎗️ ",
+            "CachyOS": "🎗️ ",
             "CentOS": "💠 ",
             "Debian": "🌀 ",
             "DragonFly": "🐉 ",
@@ -5000,6 +5028,7 @@
             "Mint": "🌿 ",
             "NetBSD": "🚩 ",
             "NixOS": "❄️ ",
+            "Nobara": "🎩 ",
             "OpenBSD": "🐡 ",
             "OpenCloudOS": "☁️ ",
             "OracleLinux": "🦴 ",
@@ -5014,6 +5043,7 @@
             "Ubuntu": "🎯 ",
             "Ultramarine": "🔷 ",
             "Unknown": "❓ ",
+            "Uos": "🐲 ",
             "Void": "  ",
             "Windows": "🪟 ",
             "openEuler": "🦉 ",
@@ -5331,7 +5361,8 @@
         },
         "detect_extensions": {
           "default": [
-            "py"
+            "py",
+            "ipynb"
           ],
           "type": "array",
           "items": {
@@ -5346,7 +5377,8 @@
             "Pipfile",
             "tox.ini",
             "setup.py",
-            "__init__.py"
+            "__init__.py",
+            "pixi.toml"
           ],
           "type": "array",
           "items": {
@@ -5355,6 +5387,15 @@
         },
         "detect_folders": {
           "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "detect_env_vars": {
+          "default": [
+            "VIRTUAL_ENV"
+          ],
           "type": "array",
           "items": {
             "type": "string"
@@ -6007,6 +6048,18 @@
           "default": "bold red",
           "type": "string"
         },
+        "success_style": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "failure_style": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "map_symbol": {
           "default": false,
           "type": "boolean"
@@ -6024,7 +6077,7 @@
           "type": "string"
         },
         "pipestatus_format": {
-          "default": "\\[$pipestatus\\] => [$symbol$common_meaning$signal_name$maybe_int]($style)",
+          "default": "\\[$pipestatus\\] => [$symbol$common_meaning$signal_name$maybe_int]($style) ",
           "type": "string"
         },
         "pipestatus_segment_format": {
@@ -6551,6 +6604,10 @@
           ]
         },
         "ignore_timeout": {
+          "default": false,
+          "type": "boolean"
+        },
+        "unsafe_no_escape": {
           "default": false,
           "type": "boolean"
         }

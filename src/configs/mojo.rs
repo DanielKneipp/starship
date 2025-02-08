@@ -12,7 +12,6 @@ pub const MOJO_DEFAULT_COLOR: Color = Color::Fixed(208);
 #[serde(default)]
 pub struct MojoConfig<'a> {
     pub format: &'a str,
-    pub show_commit: bool,
     pub symbol: &'a str,
     pub style: &'a str,
     pub disabled: bool,
@@ -21,11 +20,10 @@ pub struct MojoConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for MojoConfig<'a> {
+impl Default for MojoConfig<'_> {
     fn default() -> Self {
         MojoConfig {
             format: "with [$symbol($version )]($style)",
-            show_commit: false,
             symbol: "🔥 ",
             style: "bold 208",
             disabled: false,

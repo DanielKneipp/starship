@@ -123,7 +123,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
             }
         }
         Err(error) => {
-            log::warn!("Error in module `git_status`:\n{}", error);
+            log::warn!("Error in module `git_status`:\n{error}");
             return None;
         }
     });
@@ -250,8 +250,8 @@ fn get_repo_status(
     let has_untracked = !config.untracked.is_empty();
     let git_config = gix_repo.config_snapshot();
     if config.use_git_executable
-        || gix_repo.index_or_empty().ok()?.is_sparse()
         || repo.fs_monitor_value_is_true
+        || gix_repo.index_or_empty().ok()?.is_sparse()
     {
         let mut args = vec!["status", "--porcelain=2"];
 
@@ -676,7 +676,7 @@ fn git_status_wsl(context: &Context, conf: &GitStatusConfig) -> Option<String> {
                 log::Level::Error
             };
 
-            log::log!(level, "Failed to get Windows path:\n{:?}", e);
+            log::log!(level, "Failed to get Windows path:\n{e:?}");
 
             return None;
         }
@@ -685,13 +685,13 @@ fn git_status_wsl(context: &Context, conf: &GitStatusConfig) -> Option<String> {
     let winpath = match std::str::from_utf8(&winpath.stdout) {
         Ok(r) => r.trim_end(),
         Err(e) => {
-            log::error!("Failed to parse Windows path:\n{:?}", e);
+            log::error!("Failed to parse Windows path:\n{e:?}");
 
             return None;
         }
     };
 
-    log::trace!("Windows path: {}", winpath);
+    log::trace!("Windows path: {winpath}");
 
     // In Windows or Linux dir?
     if winpath.starts_with(r"\\wsl") {
@@ -723,7 +723,7 @@ fn git_status_wsl(context: &Context, conf: &GitStatusConfig) -> Option<String> {
     let out = match exe {
         Ok(r) => r,
         Err(e) => {
-            log::error!("Failed to run Git Status module on Windows:\n{}", e);
+            log::error!("Failed to run Git Status module on Windows:\n{e}");
 
             return None;
         }
@@ -732,10 +732,7 @@ fn git_status_wsl(context: &Context, conf: &GitStatusConfig) -> Option<String> {
     match String::from_utf8(out.stdout) {
         Ok(r) => Some(r),
         Err(e) => {
-            log::error!(
-                "Failed to parse Windows Git Status module status output:\n{}",
-                e
-            );
+            log::error!("Failed to parse Windows Git Status module status output:\n{e}");
 
             None
         }

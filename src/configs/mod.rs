@@ -46,6 +46,7 @@ pub mod haskell;
 pub mod haxe;
 pub mod helm;
 pub mod hg_branch;
+pub mod hg_state;
 pub mod hostname;
 pub mod java;
 pub mod jobs;
@@ -100,6 +101,7 @@ pub mod username;
 pub mod v;
 pub mod vagrant;
 pub mod vcsh;
+pub mod xmake;
 pub mod zig;
 
 pub use starship_root::*;
@@ -206,6 +208,8 @@ pub struct FullConfig<'a> {
     #[serde(borrow)]
     hg_branch: hg_branch::HgBranchConfig<'a>,
     #[serde(borrow)]
+    hg_state: hg_state::HgStateConfig<'a>,
+    #[serde(borrow)]
     hostname: hostname::HostnameConfig<'a>,
     #[serde(borrow)]
     java: java::JavaConfig<'a>,
@@ -310,6 +314,8 @@ pub struct FullConfig<'a> {
     vcsh: vcsh::VcshConfig<'a>,
     #[serde(borrow)]
     vlang: v::VConfig<'a>,
+    #[serde(borrow)]
+    xmake: xmake::XMakeConfig<'a>,
     #[serde(borrow)]
     zig: zig::ZigConfig<'a>,
     #[serde(borrow)]

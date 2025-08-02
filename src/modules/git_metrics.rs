@@ -29,7 +29,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         return None;
     }
     // TODO: remove this special case once `gitoxide` can handle sparse indices for tree-index comparisons.
-    let stats = if gix_repo.index_or_empty().ok()?.is_sparse() || repo.fs_monitor_value_is_true {
+    let stats = if repo.fs_monitor_value_is_true || gix_repo.index_or_empty().ok()?.is_sparse() {
         let mut git_args = vec!["diff", "--shortstat"];
         if config.ignore_submodules {
             git_args.push("--ignore-submodules");
@@ -264,7 +264,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     module.set_segments(match parsed {
         Ok(segments) => segments,
         Err(error) => {
-            log::warn!("Error in module `git_metrics`:\n{}", error);
+            log::warn!("Error in module `git_metrics`:\n{error}");
             return None;
         }
     });
@@ -373,8 +373,8 @@ impl GitDiff {
         let deleted_re = Regex::new(r"(\d+) \w+\(\-\)").unwrap();
 
         Self {
-            added: GitDiff::get_matched_str(diff, &added_re).to_owned(),
-            deleted: GitDiff::get_matched_str(diff, &deleted_re).to_owned(),
+            added: Self::get_matched_str(diff, &added_re).to_owned(),
+            deleted: Self::get_matched_str(diff, &deleted_re).to_owned(),
         }
     }
 
